@@ -1,0 +1,3 @@
+[workspace]
+members = ["tlist", "nat-macros"]
+resolver = "3"

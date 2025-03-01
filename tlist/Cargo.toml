@@ -1,0 +1,7 @@
+[package]
+name = "tlist"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+nat-macros = { path = "../nat-macros" }
