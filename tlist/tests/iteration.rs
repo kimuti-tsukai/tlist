@@ -1,4 +1,4 @@
-use tlist::list;
+use tlist::{ToDynBox, list};
 
 #[test]
 fn into_iter() {
@@ -28,4 +28,32 @@ fn mut_into_iter() {
     assert_eq!(iter.next(), Some(&mut 2));
     assert_eq!(iter.next(), Some(&mut 3));
     assert_eq!(iter.next(), None);
+}
+
+#[test]
+fn different_types() {
+    let list = list![1, "Hello", true, 'c', std::f64::consts::PI];
+
+    let mut iter = list.to_dyn_box().into_iter();
+    assert_eq!(
+        iter.next().map(|v| v.downcast().unwrap()),
+        Some(Box::new(1))
+    );
+    assert_eq!(
+        iter.next().map(|v| v.downcast().unwrap()),
+        Some(Box::new("Hello"))
+    );
+    assert_eq!(
+        iter.next().map(|v| v.downcast().unwrap()),
+        Some(Box::new(true))
+    );
+    assert_eq!(
+        iter.next().map(|v| v.downcast().unwrap()),
+        Some(Box::new('c'))
+    );
+    assert_eq!(
+        iter.next().map(|v| v.downcast().unwrap()),
+        Some(Box::new(std::f64::consts::PI))
+    );
+    assert_eq!(iter.next().map(|v| v.downcast().unwrap()), None::<Box<()>>);
 }
