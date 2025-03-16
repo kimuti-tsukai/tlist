@@ -1,5 +1,7 @@
 use std::{any::Any, marker::PhantomData};
 
+use replace_with::replace_with_and_return;
+
 // Natural Numbers
 pub trait Nat {
     const VALUE: usize;
@@ -25,6 +27,28 @@ impl<N: Nat> Nat for Succ<N> {
 
     type Add<T: Nat> = Succ<N::Add<T>>;
     type Mul<T: Nat> = <N::Mul<T> as Nat>::Add<T>;
+}
+
+// Type-level booleans
+pub trait TBool {
+    type Not: TBool;
+    type And<T: TBool>: TBool;
+    type Or<T: TBool>: TBool;
+}
+
+pub struct TTrue;
+pub struct TFalse;
+
+impl TBool for TTrue {
+    type Not = TFalse;
+    type And<T: TBool> = T;
+    type Or<T: TBool> = TTrue;
+}
+
+impl TBool for TFalse {
+    type Not = TTrue;
+    type And<T: TBool> = TFalse;
+    type Or<T: TBool> = T;
 }
 
 // Optional
@@ -386,12 +410,22 @@ impl<T> All<T> for Nil {}
 impl<T, Tail> All<T> for Cons<T, Tail> where Tail: All<T> {}
 
 trait PopOptional<T> {
-    fn pop_optional(self: Box<Self>) -> (Option<T>, Box<dyn PopOptional<T>>);
+    fn pop_optional_box(self: Box<Self>) -> (Option<T>, Box<dyn PopOptional<T>>);
+    fn pop_optional_ref(&self) -> (Option<&T>, &dyn PopOptional<T>);
+    fn pop_optional_mut(&mut self) -> (Option<&mut T>, &mut dyn PopOptional<T>);
 }
 
 impl<T> PopOptional<T> for Nil {
-    fn pop_optional(self: Box<Self>) -> (Option<T>, Box<dyn PopOptional<T>>) {
+    fn pop_optional_box(self: Box<Self>) -> (Option<T>, Box<dyn PopOptional<T>>) {
         (None, Box::new(Nil))
+    }
+
+    fn pop_optional_ref(&self) -> (Option<&T>, &dyn PopOptional<T>) {
+        (None, self)
+    }
+
+    fn pop_optional_mut(&mut self) -> (Option<&mut T>, &mut dyn PopOptional<T>) {
+        (None, self)
     }
 }
 
@@ -399,24 +433,63 @@ impl<T, Tail> PopOptional<T> for Cons<T, Tail>
 where
     Tail: PopOptional<T> + 'static,
 {
-    fn pop_optional(self: Box<Self>) -> (Option<T>, Box<dyn PopOptional<T>>) {
+    fn pop_optional_box(self: Box<Self>) -> (Option<T>, Box<dyn PopOptional<T>>) {
         let Cons(value, tail) = *self;
         (Some(value), Box::new(tail))
+    }
+
+    fn pop_optional_ref(&self) -> (Option<&T>, &dyn PopOptional<T>) {
+        (Some(&self.0), &self.1)
+    }
+
+    fn pop_optional_mut(&mut self) -> (Option<&mut T>, &mut dyn PopOptional<T>) {
+        (Some(&mut self.0), &mut self.1)
     }
 }
 
 pub struct IntoIter<T> {
-    list: Option<Box<dyn PopOptional<T>>>,
+    list: Box<dyn PopOptional<T>>,
 }
 
 impl<T> Iterator for IntoIter<T> {
     type Item = T;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let list = self.list.take()?;
-        let (value, list) = list.pop_optional();
-        self.list = Some(list);
+        replace_with_and_return(
+            &mut self.list,
+            || Box::new(Nil),
+            PopOptional::pop_optional_box,
+        )
+    }
+}
+
+pub struct Iter<'a, T> {
+    list: &'a dyn PopOptional<T>,
+}
+
+impl<'a, T> Iterator for Iter<'a, T> {
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let (value, list) = self.list.pop_optional_ref();
+        self.list = list;
         value
+    }
+}
+
+pub struct IterMut<'a, T> {
+    list: &'a mut dyn PopOptional<T>,
+}
+
+impl<'a, T> Iterator for IterMut<'a, T> {
+    type Item = &'a mut T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        replace_with_and_return(
+            &mut self.list,
+            || Box::leak(Box::new(Nil)),
+            PopOptional::pop_optional_mut,
+        )
     }
 }
 
@@ -426,7 +499,7 @@ impl IntoIterator for Nil {
 
     fn into_iter(self) -> Self::IntoIter {
         IntoIter {
-            list: Some(Box::new(self)),
+            list: Box::new(self),
         }
     }
 }
@@ -441,7 +514,7 @@ where
 
     fn into_iter(self) -> Self::IntoIter {
         IntoIter {
-            list: Some(Box::new(self)),
+            list: Box::new(self),
         }
     }
 }
