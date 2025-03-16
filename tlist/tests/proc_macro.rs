@@ -1,4 +1,4 @@
-use nat_macros::expr;
+use nat_macros::{expr, nat};
 use tlist::{Nat, Succ, Zero};
 
 #[allow(unused)]
@@ -19,4 +19,14 @@ fn expr_test() {
     assert_eq!(Five::VALUE, 5);
     assert_eq!(Six::VALUE, 6);
     assert_eq!(Seven::VALUE, 7);
+}
+
+#[allow(unused)]
+#[test]
+fn nat_test() {
+    type Z = nat!(0);
+    type One = nat!(1);
+    type Two = nat!(2);
+    type Three = nat!(3);
+    type Four = nat!(4);
 }
