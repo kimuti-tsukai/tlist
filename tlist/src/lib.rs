@@ -29,28 +29,6 @@ impl<N: Nat> Nat for Succ<N> {
     type Mul<T: Nat> = <N::Mul<T> as Nat>::Add<T>;
 }
 
-// Type-level booleans
-pub trait TBool {
-    type Not: TBool;
-    type And<T: TBool>: TBool;
-    type Or<T: TBool>: TBool;
-}
-
-pub struct TTrue;
-pub struct TFalse;
-
-impl TBool for TTrue {
-    type Not = TFalse;
-    type And<T: TBool> = T;
-    type Or<T: TBool> = TTrue;
-}
-
-impl TBool for TFalse {
-    type Not = TTrue;
-    type And<T: TBool> = TFalse;
-    type Or<T: TBool> = T;
-}
-
 // Optional
 pub trait Optional<T> {
     type AsRef<'a>: Optional<&'a T>
