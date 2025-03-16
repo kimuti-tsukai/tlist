@@ -10,19 +10,16 @@ pub fn nat(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     // Parse the input tokens into a syntax tree
     let input = parse_macro_input!(input as LitInt);
 
-    fn to_type(n: u64) -> proc_macro2::TokenStream {
-        if n == 0 {
-            quote! { tlist::Zero }
-        } else {
-            let prev = to_type(n - 1);
-            quote! { tlist::Succ<#prev> }
-        }
-    }
-
     // Extract the value of the input integer
     let n = input.base10_parse::<u64>().unwrap();
 
-    to_type(n).into()
+    let mut result = quote! { tlist::Zero };
+
+    for _ in 0..n {
+        result = quote! { tlist::Succ<#result> };
+    }
+
+    result.into()
 }
 
 struct ExprAdd {
