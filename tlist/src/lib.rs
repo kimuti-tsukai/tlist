@@ -162,6 +162,20 @@ pub trait HList {
     {
         RemoveOptional::remove_optional(self)
     }
+
+    fn iter<'a>(&'a self) -> <&'a Self as IntoIterator>::IntoIter
+    where
+        &'a Self: IntoIterator,
+    {
+        self.into_iter()
+    }
+    
+    fn iter_mut<'a>(&'a mut self) -> <&'a mut Self as IntoIterator>::IntoIter
+    where
+        &'a mut Self: IntoIterator,
+    {
+        self.into_iter()
+    }
 }
 
 #[macro_export]
@@ -170,10 +184,10 @@ macro_rules! list {
         $crate::Nil
     };
     ($head:expr) => {
-        $crate::Cons($head, $crate::Nil)
+        $crate::Cons::new($head, $crate::Nil)
     };
     ($head:expr, $($tail:expr),+ $(,)?) => {
-        $crate::Cons($head, $crate::list!($($tail),+))
+        $crate::Cons::new($head, $crate::list!($($tail),+))
     };
 }
 
@@ -200,6 +214,12 @@ impl<Head, Tail> Cons<Head, Tail> {}
 
 impl HList for Nil {}
 impl<Head, Tail: HList> HList for Cons<Head, Tail> {}
+
+impl<Head, Tail> Cons<Head, Tail> {
+    pub fn new(head: Head, tail: Tail) -> Self {
+        Cons(head, tail)
+    }
+}
 
 pub trait Get<N> {
     type Output;
@@ -516,6 +536,50 @@ where
         IntoIter {
             list: Box::new(self),
         }
+    }
+}
+
+impl<'a> IntoIterator for &'a Nil {
+    type Item = &'a ();
+    type IntoIter = Iter<'a, ()>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        Iter { list: self }
+    }
+}
+
+impl<'a, Head, Tail> IntoIterator for &'a Cons<Head, Tail>
+where
+    Head: 'a,
+    Tail: PopOptional<Head> + 'static,
+{
+    type Item = &'a Head;
+    type IntoIter = Iter<'a, Head>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        Iter { list: self }
+    }
+}
+
+impl<'a> IntoIterator for &'a mut Nil {
+    type Item = &'a mut ();
+    type IntoIter = IterMut<'a, ()>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        IterMut { list: self }
+    }
+}
+
+impl<'a, Head, Tail> IntoIterator for &'a mut Cons<Head, Tail>
+where
+    Head: 'a,
+    Tail: PopOptional<Head> + 'static,
+{
+    type Item = &'a mut Head;
+    type IntoIter = IterMut<'a, Head>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        IterMut { list: self }
     }
 }
 
