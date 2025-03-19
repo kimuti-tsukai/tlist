@@ -52,6 +52,23 @@ version = "0.1.0"
 dependencies = [
  "nat-macros",
  "replace_with",
+ "tlist-macros",
+]
+
+[[package]]
+name = "tlist-macros"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "tlist-nightly"
+version = "0.1.0"
+dependencies = [
+ "tlist",
 ]
 
 [[package]]

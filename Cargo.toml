@@ -1,3 +1,4 @@
 [workspace]
-members = ["tlist", "nat-macros"]
+members = ["tlist", "nat-macros", "tlist-nightly", "tlist-macros"]
+default-members = ["tlist", "nat-macros"]
 resolver = "3"
