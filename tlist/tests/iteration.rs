@@ -1,4 +1,4 @@
-use tlist::{ToDynBox, list};
+use tlist::{list, ToDynBox};
 
 #[test]
 fn into_iter() {

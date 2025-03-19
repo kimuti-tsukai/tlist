@@ -2,6 +2,8 @@ use std::{any::Any, marker::PhantomData};
 
 use replace_with::replace_with_and_return;
 
+pub use tlist_macros::*;
+
 // Natural Numbers
 pub trait Nat {
     const VALUE: usize;
@@ -147,7 +149,7 @@ pub trait HList {
     {
         self.into_iter()
     }
-    
+
     fn iter_mut<'a>(&'a mut self) -> <&'a mut Self as IntoIterator>::IntoIter
     where
         &'a mut Self: IntoIterator,
@@ -185,7 +187,7 @@ macro_rules! List {
 #[derive(Default, Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub struct Nil;
 #[derive(Default, Debug, PartialEq, Eq, Clone, Copy, Hash)]
-pub struct Cons<Head, Tail>(Head, Tail);
+pub struct Cons<Head, Tail>(pub Head, pub Tail);
 
 impl Nil {}
 impl<Head, Tail> Cons<Head, Tail> {}
@@ -688,5 +690,31 @@ where
 
     fn as_dyn_mut(&'a mut self) -> Self::Output {
         Cons(&mut self.0, self.1.as_dyn_mut())
+    }
+}
+
+pub trait AllInto<T> {
+    type Into: All<T>;
+
+    fn into(self) -> Self::Into;
+}
+
+impl<T> AllInto<T> for Nil {
+    type Into = Nil;
+
+    fn into(self) -> Self::Into {
+        Nil
+    }
+}
+
+impl<Head, Tail, T> AllInto<T> for Cons<Head, Tail>
+where
+    Head: Into<T>,
+    Tail: AllInto<T>,
+{
+    type Into = Cons<T, <Tail as AllInto<T>>::Into>;
+
+    fn into(self) -> Self::Into {
+        Cons(self.0.into(), self.1.into())
     }
 }

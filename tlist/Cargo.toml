@@ -5,4 +5,5 @@ edition = "2024"
 
 [dependencies]
 nat-macros = { path = "../nat-macros" }
+tlist-macros = { path = "../tlist-macros" }
 replace_with = "0.1.7"
